@@ -1,5 +1,10 @@
 const natural = require('natural');
 const WtoN = require('words-to-num');
+var corpus = ['one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety', 'hundred'];
+var spellcheck = new natural.Spellcheck(corpus);
+const shunt = {
+  ate: 8
+}
 tokenizer = new natural.TreebankWordTokenizer();
 module.exports = () => {
   let state = {};
@@ -50,8 +55,16 @@ module.exports = () => {
               const searchSpace = tokens
                 .slice(startIdx > -1 ? timeIdx - startIdx : 0, timeIdx);
               const numberWords = searchSpace
-                .map(token => WtoN.convert(token))
+                .filter(t=>t!=='for')
+                .map(token => {
+                  const maybe = token && WtoN.convert(token)
+                  const potential = spellcheck.getCorrections(token, 1)[0];
+                  return !isNaN(maybe) && maybe !== 0 ?
+                    maybe :
+                    shunt[token] ? shunt[token] : potential && WtoN.convert(potential);
+                })
                 .filter(parsed => !isNaN(parsed) && parsed !== 0);
+                console.log("numberwords", numberWords)
               const val = numberWords.reduce((acc, val) => {
                 return acc + val;
               }, 0);
